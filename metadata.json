@@ -1,0 +1,5 @@
+{
+  "name": "GezinsBudget Planner",
+  "description": "Een interactieve, offline-first budget planner speciaal voor gezinnen, met focus op inzicht in kinderopvang kosten en reserveringen.",
+  "requestFramePermissions": []
+}
