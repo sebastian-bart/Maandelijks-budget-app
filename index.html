@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GezinsBudget Pro - Familie van 5</title>
+    <title>GezinsBudget Pro - Gezin van 5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -21,6 +21,10 @@
             @apply w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all;
         }
 
+        .amount-input {
+            @apply text-right pr-4 pl-7 font-mono font-medium;
+        }
+
         /* Verberg pijltjes bij number inputs */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -33,8 +37,33 @@
         }
 
         @keyframes pop {
-            0% { transform: scale(0.95); opacity: 0; }
+            0% { transform: scale(0.98); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Desktop vs Mobile adjustments */
+        @media (min-width: 768px) {
+            .budget-row {
+                display: grid;
+                grid-template-columns: 1fr 180px 40px;
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .budget-row {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .label-input {
+                flex: 1;
+                font-size: 0.75rem !important;
+            }
+            .amount-container {
+                width: 110px;
+            }
         }
     </style>
 <script type="importmap">
@@ -52,110 +81,105 @@
 </head>
 <body class="text-slate-800">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto px-4 py-6 sm:py-10">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">GezinsBudget <span class="text-emerald-500">Pro</span></h1>
-                <p class="text-slate-500">Financieel overzicht voor een gezin van 5</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight text-center md:text-left">
+                    GezinsBudget <span class="text-emerald-500">Pro</span>
+                </h1>
+                <p class="text-slate-500 text-sm text-center md:text-left">Financieel grootboek voor een gezin van 5</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="exportData()" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition">Exporteer</button>
-                <button onclick="resetData()" class="bg-rose-50 text-rose-600 border border-rose-100 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition">Reset</button>
+                <button onclick="exportData()" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition">Exporteer</button>
+                <button onclick="resetData()" class="bg-rose-50 text-rose-600 border border-rose-100 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-100 transition">Reset</button>
             </div>
         </header>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-emerald-500 text-white p-6 rounded-3xl shadow-lg shadow-emerald-100">
-                <p class="text-emerald-100 text-sm font-medium uppercase tracking-wider mb-1">Maandelijkse Inkomsten</p>
-                <h2 id="total-income-display" class="text-3xl font-bold">€ 0,00</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
+            <div class="bg-emerald-500 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-emerald-100">
+                <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Maandinkomsten</p>
+                <h2 id="total-income-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
             </div>
-            <div class="bg-rose-500 text-white p-6 rounded-3xl shadow-lg shadow-rose-100">
-                <p class="text-rose-100 text-sm font-medium uppercase tracking-wider mb-1">Maandelijkse Uitgaven</p>
-                <h2 id="total-expenses-display" class="text-3xl font-bold">€ 0,00</h2>
+            <div class="bg-rose-500 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-rose-100">
+                <p class="text-rose-100 text-[10px] font-bold uppercase tracking-widest mb-1">Maanduitgaven</p>
+                <h2 id="total-expenses-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
             </div>
-            <div class="bg-slate-800 text-white p-6 rounded-3xl shadow-lg shadow-slate-200">
-                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Netto Resultaat</p>
-                <h2 id="net-result-display" class="text-3xl font-bold">€ 0,00</h2>
+            <div class="bg-slate-800 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-slate-200">
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Besteedbaar Saldo</p>
+                <h2 id="net-result-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
             </div>
         </div>
 
-        <!-- Dashboard Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10">
             
-            <!-- Inkomsten Sectie -->
-            <section class="pastel-green border p-6 rounded-3xl h-full">
+            <!-- Inkomsten -->
+            <section class="pastel-green border p-5 sm:p-8 rounded-3xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-                        Inkomsten (Maandelijks)
+                    <h3 class="text-base sm:text-lg font-bold text-emerald-900 flex items-center gap-2 uppercase tracking-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-1 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                        Inkomsten
                     </h3>
-                    <button onclick="addItem('income')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xl">+</button>
+                    <button onclick="addItem('income')" class="bg-emerald-200 text-emerald-800 h-8 w-8 rounded-full font-bold hover:bg-emerald-300 transition flex items-center justify-center">+</button>
                 </div>
-                <div id="income-list" class="space-y-4">
+                <div id="income-list" class="space-y-3">
                     <!-- Dynamic Rows -->
                 </div>
             </section>
 
-            <!-- Uitgaven Sectie -->
-            <section class="pastel-rose border p-6 rounded-3xl h-full">
+            <!-- Uitgaven -->
+            <section class="pastel-rose border p-5 sm:p-8 rounded-3xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-bold text-rose-900 flex items-center gap-2 uppercase tracking-wide">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
-                        Uitgaven (Maandelijks)
+                        Maanduitgaven
                     </h3>
-                    <button onclick="addItem('expenses')" class="text-rose-600 hover:text-rose-800 font-bold text-xl">+</button>
+                    <button onclick="addItem('expenses')" class="bg-rose-200 text-rose-800 h-8 w-8 rounded-full font-bold hover:bg-rose-300 transition flex items-center justify-center">+</button>
                 </div>
-                <div id="expenses-list" class="space-y-4">
+                <div id="expenses-list" class="space-y-3">
                     <!-- Dynamic Rows -->
                 </div>
             </section>
 
-            <!-- Reserveringen Sectie -->
-            <section class="pastel-blue border p-6 rounded-3xl lg:col-span-2">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <!-- Sparen (Apart) -->
+            <section class="pastel-blue border p-5 sm:p-8 rounded-3xl lg:col-span-2 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                     <div>
-                        <h3 class="text-lg font-bold text-sky-900 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.657 15.657a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
-                            Apart Sparen / Reserveringen (Kwartaal/Jaar)
+                        <h3 class="text-base sm:text-lg font-bold text-sky-900 flex items-center gap-2 uppercase tracking-wide">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd" /></svg>
+                            Sparen & Reserveringen
                         </h3>
-                        <p class="text-sky-600 text-xs mt-1 italic">Deze bedragen worden niet meegeteld in het maandelijks saldo.</p>
+                        <p class="text-sky-600 text-[11px] mt-1 font-medium">Extra inkomsten/reserveringen die apart staan van het maandbudget.</p>
                     </div>
-                    <div class="bg-sky-500 text-white px-6 py-3 rounded-2xl">
-                        <p class="text-sky-100 text-[10px] uppercase font-bold tracking-widest">Totaal Gereserveerd</p>
-                        <p id="total-savings-display" class="text-xl font-black">€ 0,00</p>
-                    </div>
-                </div>
-                
-                <div class="hidden md:block mb-4 px-4">
-                    <div class="grid grid-cols-12 gap-4 text-xs font-bold text-sky-800 uppercase tracking-wider">
-                        <div class="col-span-8">Omschrijving</div>
-                        <div class="col-span-3 text-right">Bedrag</div>
-                        <div class="col-span-1"></div>
+                    <div class="bg-white border-2 border-sky-200 px-6 py-4 rounded-2xl flex flex-col items-end">
+                        <p class="text-sky-400 text-[10px] uppercase font-bold tracking-widest mb-1">Totaal Gereserveerd</p>
+                        <p id="total-savings-display" class="text-2xl font-black text-sky-900">€ 0,00</p>
                     </div>
                 </div>
 
-                <div id="savings-list" class="space-y-4">
+                <div id="savings-list" class="space-y-3">
                     <!-- Dynamic Rows -->
                 </div>
                 
-                <button onclick="addItem('savings')" class="mt-6 w-full py-3 border-2 border-dashed border-sky-200 rounded-2xl text-sky-600 font-medium hover:bg-sky-100/50 transition">
-                    + Nieuwe reservering toevoegen
+                <button onclick="addItem('savings')" class="mt-8 w-full py-4 border-2 border-dashed border-sky-300 rounded-2xl text-sky-600 text-sm font-bold uppercase tracking-widest hover:bg-sky-50 transition-all">
+                    + Nieuwe post toevoegen
                 </button>
             </section>
 
         </div>
 
-        <footer class="mt-16 text-center text-slate-400 text-xs">
-            GezinsBudget Pro &copy; 2024 - Lokaal opgeslagen in uw browser
+        <footer class="mt-20 py-8 text-center text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] border-t border-slate-100">
+            GezinsBudget Pro &bull; Geen Cloud &bull; 100% Privacy
         </footer>
     </div>
 
-    <!-- UI Templates Script -->
+    <!-- UI Logic Script -->
     <script>
-        const STORAGE_KEY = 'family_budget_data_v5';
+        const STORAGE_KEY = 'family_budget_data_v6_final';
 
+        // Standaardwaarden voor een gezin van 5
         let budgetData = {
             income: [
                 { id: 1, label: 'Salaris 1 (Netto)', amount: 2600 },
@@ -165,23 +189,25 @@
             ],
             expenses: [
                 { id: 5, label: 'Hypotheek/Huur', amount: 1200 },
-                { id: 6, label: 'Boodschappen', amount: 900 },
+                { id: 6, label: 'Boodschappen (5 pers.)', amount: 950 },
                 { id: 7, label: 'Kinderopvang', amount: 1100 },
                 { id: 8, label: 'BSO', amount: 450 },
-                { id: 9, label: 'Energie & Water', amount: 250 },
-                { id: 10, label: 'Zorgverzekering', amount: 320 }
+                { id: 9, label: 'Zorgverzekeringen', amount: 320 },
+                { id: 10, label: 'Sport & Hobby kids', amount: 180 }
             ],
             savings: [
-                { id: 11, label: 'Kinderbijslag (per kwartaal)', amount: 900 },
-                { id: 12, label: 'Vakantiegeld (jaarlijks)', amount: 3500 },
-                { id: 13, label: 'Eindejaarsuitkering', amount: 2000 }
+                { id: 11, label: 'Kinderbijslag (kwartaal)', amount: 900 },
+                { id: 12, label: 'Vakantiegeld', amount: 3500 },
+                { id: 13, label: '13e Maand / Bonus', amount: 2000 }
             ]
         };
 
         function init() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
-                budgetData = JSON.parse(saved);
+                try {
+                    budgetData = JSON.parse(saved);
+                } catch(e) { console.error("Data corrupt, using defaults."); }
             }
             render();
         }
@@ -200,24 +226,22 @@
 
             budgetData[category].forEach((item) => {
                 const row = document.createElement('div');
-                row.className = 'grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-white/60 p-3 rounded-2xl border border-white/50 animate-pop';
+                row.className = 'budget-row bg-white/70 p-2 sm:p-3 rounded-2xl border border-white shadow-sm animate-pop';
                 
                 row.innerHTML = `
-                    <div class="md:col-span-8">
-                        <label class="block md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1">Omschrijving</label>
-                        <input type="text" class="input-field" value="${item.label}" 
+                    <div class="flex-grow">
+                        <input type="text" class="input-field label-input font-semibold text-slate-700" value="${item.label}" 
+                            placeholder="Omschrijving"
                             onchange="updateItem('${category}', ${item.id}, 'label', this.value)">
                     </div>
-                    <div class="md:col-span-3">
-                        <label class="block md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1">Bedrag (€)</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-slate-400">€</span>
-                            <input type="number" class="input-field pl-7 text-right font-mono" value="${item.amount}" 
-                                onchange="updateItem('${category}', ${item.id}, 'amount', this.value)">
-                        </div>
+                    <div class="amount-container relative">
+                        <span class="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">€</span>
+                        <input type="number" class="input-field amount-input" value="${item.amount}" 
+                            step="0.01"
+                            onchange="updateItem('${category}', ${item.id}, 'amount', this.value)">
                     </div>
-                    <div class="md:col-span-1 flex justify-center">
-                        <button onclick="deleteItem('${category}', ${item.id})" class="text-slate-300 hover:text-rose-500 transition">
+                    <div class="flex justify-center">
+                        <button onclick="deleteItem('${category}', ${item.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         </button>
                     </div>
@@ -241,7 +265,7 @@
 
         function addItem(category) {
             const newId = Date.now();
-            budgetData[category].push({ id: newId, label: 'Nieuwe post', amount: 0 });
+            budgetData[category].push({ id: newId, label: '', amount: 0 });
             render();
         }
 
@@ -261,7 +285,6 @@
             document.getElementById('net-result-display').innerText = formatEuro(net);
             document.getElementById('total-savings-display').innerText = formatEuro(totalSavings);
 
-            // Kleur indicatie voor netto resultaat
             const netDisplay = document.getElementById('net-result-display').parentElement;
             if (net < 0) {
                 netDisplay.classList.remove('bg-slate-800');
@@ -281,7 +304,7 @@
         }
 
         function resetData() {
-            if (confirm('Weet u zeker dat u alle gegevens wilt wissen en de standaardwaarden wilt herstellen?')) {
+            if (confirm('Alle gegevens wissen?')) {
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
             }
@@ -289,15 +312,12 @@
 
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(budgetData));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "gezinsbudget_export.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "gezinsbudget_backup.json");
+            dl.click();
         }
 
-        // Run on load
         init();
     </script>
 </body>
