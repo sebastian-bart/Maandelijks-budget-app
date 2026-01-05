@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GezinsBudget Planner Pro</title>
+    
+    <!-- Scripts: Tailwind, React, Lucide Icons, Recharts, Babel -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+
     <script>
       tailwind.config = {
         theme: {
@@ -15,53 +23,61 @@
                 greenDark: '#065f46',
                 blue: '#e0f2fe',
                 blueDark: '#075985',
+                rose: '#fff1f2',
+                roseDark: '#9f1239',
               }
             }
           }
         }
       }
     </script>
+    
     <style>
-      ::-webkit-scrollbar { width: 8px; }
-      ::-webkit-scrollbar-track { background: #f1f1f1; }
-      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      .animate-fade-in { animation: fadeIn 0.4s ease-out; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
-    <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-    "recharts": "https://esm.sh/recharts@2.10.3",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "uuid": "https://esm.sh/uuid@^13.0.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0"
   }
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-700 antialiased selection:bg-teal-200">
+<body class="bg-slate-50 text-slate-700 antialiased">
     <div id="root"></div>
 
-    <script type="module">
-        import React, { useState, useEffect, useMemo, useRef } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { 
-            Wallet, TrendingDown, PiggyBank, Calculator, PieChart as PieChartIcon, 
-            RefreshCcw, Baby, LayoutDashboard, List, Download, Upload, 
-            TrendingUp, Save, Trash2, Calendar, Filter, X, Edit2, Check, Euro, PlusCircle
-        } from 'lucide-react';
-        import { 
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-            AreaChart, Area, PieChart, Pie, Cell 
-        } from 'recharts';
+            PieChart, Pie, Cell, AreaChart, Area 
+        } = Recharts;
 
-        // --- CONSTANTS & TYPES ---
-        const STORAGE_KEY = 'gezinsbudget_v1';
+        // --- Icon Component Wrapper ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const [iconSvg, setIconSvg] = useState("");
+            useEffect(() => {
+                if (window.lucide) {
+                    const icon = window.lucide.icons[name];
+                    if (icon) setIconSvg(icon.toSvg({ size, class: className }));
+                }
+            }, [name, size, className]);
+            return <span dangerouslySetInnerHTML={{ __html: iconSvg }} />;
+        };
+
+        // --- CONSTANTS ---
+        const STORAGE_KEY = 'gezinsbudget_v2_single';
         const CURRENCY_FORMATTER = new Intl.NumberFormat('nl-NL', {
             style: 'currency',
             currency: 'EUR',
@@ -72,232 +88,104 @@
             income: [
                 { id: 'i1', label: 'Salaris 1 (Netto)', amount: 2500 },
                 { id: 'i2', label: 'Salaris 2 (Netto)', amount: 2200 },
-                { id: 'i3', label: 'Kinderopvangtoeslag', amount: 800 },
+                { id: 'i3', label: 'Kinderopvangtoeslag', amount: 850 },
+                { id: 'i4', label: 'Kindgebonden Budget', amount: 120 },
             ],
             expenses: [
-                { id: 'e1', label: 'Kinderopvang / BSO', amount: 1200 },
-                { id: 'e2', label: 'Hypotheek / Huur', amount: 1100 },
-                { id: 'e3', label: 'Boodschappen', amount: 800 },
-                { id: 'e4', label: 'Energie & Water', amount: 250 },
+                { id: 'e1', label: 'Hypotheek / Huur', amount: 1200 },
+                { id: 'e2', label: 'Kinderopvang / BSO', amount: 1350 },
+                { id: 'e3', label: 'Boodschappen', amount: 750 },
+                { id: 'e4', label: 'Gas, Water, Licht', amount: 250 },
+                { id: 'e5', label: 'Verzekeringen', amount: 180 },
             ],
             savings: [
-                { id: 's1', label: 'Vakantiegeld reservering', amount: 350 },
-                { id: 's2', label: 'Kinderbijslag (omgerekend p/m)', amount: 100 },
+                { id: 's1', label: 'Vakantiegeld (Reservering)', amount: 350 },
+                { id: 's2', label: 'Kinderbijslag (Sparen)', amount: 100 },
             ],
             history: []
         };
 
         // --- COMPONENTS ---
 
-        const Card = ({ children, className = '', title, icon, headerColor = 'bg-white' }) => (
+        const Card = ({ children, className = "", title, iconName, headerColor = "bg-white" }) => (
             <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden ${className}`}>
-                {(title || icon) && (
+                {(title || iconName) && (
                     <div className={`px-6 py-4 border-b border-slate-100 flex items-center gap-2 ${headerColor}`}>
-                        {icon && <span className="text-slate-600">{icon}</span>}
-                        {title && <h3 className="font-semibold text-slate-800 text-lg">{title}</h3>}
+                        {iconName && <Icon name={iconName} className="text-slate-500" />}
+                        {title && <h3 className="font-semibold text-slate-800">{title}</h3>}
                     </div>
                 )}
-                <div className="p-4 sm:p-6">{children}</div>
+                <div className="p-5">{children}</div>
             </div>
         );
 
-        const StatCard = ({ label, value, description, colorClass, bgClass }) => (
-            <div className={`p-5 rounded-2xl ${bgClass} flex flex-col justify-between h-full border border-white/50 shadow-sm`}>
-                <p className="text-slate-600 font-medium text-sm mb-1">{label}</p>
-                <p className={`text-2xl sm:text-3xl font-bold ${colorClass} tracking-tight`}>{value}</p>
-                {description && <p className="text-xs text-slate-500 mt-2">{description}</p>}
+        const StatCard = ({ label, value, colorClass, bgClass, iconName }) => (
+            <div className={`p-5 rounded-2xl ${bgClass} border border-white/50 shadow-sm flex items-start justify-between`}>
+                <div>
+                    <p className="text-slate-500 font-medium text-xs uppercase tracking-wider mb-1">{label}</p>
+                    <p className={`text-2xl font-bold ${colorClass}`}>{value}</p>
+                </div>
+                {iconName && <div className="p-2 rounded-lg bg-white/50"><Icon name={iconName} size={20} className={colorClass} /></div>}
             </div>
         );
 
-        const EditableRow = ({ item, onUpdate, onDelete, accentColor }) => {
+        const EditableRow = ({ item, onUpdate, onDelete, colorTheme }) => {
             const [isEditing, setIsEditing] = useState(false);
-            const [tempLabel, setTempLabel] = useState(item.label);
-            const [tempAmount, setTempAmount] = useState(item.amount.toString());
+            const [label, setLabel] = useState(item.label);
+            const [amount, setAmount] = useState(item.amount.toString());
 
-            const handleSave = () => {
-                const parsedAmount = parseFloat(tempAmount.replace(',', '.'));
-                onUpdate(item.id, { label: tempLabel, amount: isNaN(parsedAmount) ? 0 : parsedAmount });
+            const save = () => {
+                const val = parseFloat(amount.replace(',', '.'));
+                onUpdate(item.id, { label, amount: isNaN(val) ? 0 : val });
                 setIsEditing(false);
             };
 
             if (isEditing) {
                 return (
-                    <div className="flex flex-col sm:flex-row gap-2 items-center p-3 rounded-lg bg-slate-50 border border-teal-200 mb-2 animate-fade-in">
-                        <input type="text" value={tempLabel} onChange={(e) => setTempLabel(e.target.value)} className="flex-grow p-2 border border-slate-200 rounded text-sm w-full focus:ring-2 focus:ring-teal-400 outline-none" placeholder="Omschrijving" />
-                        <div className="relative w-full sm:w-32">
-                            <Euro size={14} className="absolute left-2 top-3 text-slate-400" />
-                            <input type="number" value={tempAmount} onChange={(e) => setTempAmount(e.target.value)} className="w-full p-2 pl-7 border border-slate-200 rounded text-sm text-right focus:ring-2 focus:ring-teal-400 outline-none" step="0.01" />
-                        </div>
-                        <div className="flex gap-1 w-full sm:w-auto justify-end">
-                            <button onClick={handleSave} className="p-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"><Check size={18} /></button>
-                        </div>
+                    <div className="flex flex-col sm:flex-row gap-2 p-2 bg-slate-50 rounded-xl mb-2 animate-fade-in border border-slate-200">
+                        <input className="flex-grow p-2 text-sm rounded-lg border focus:ring-2 focus:ring-teal-400 outline-none" value={label} onChange={e => setLabel(e.target.value)} />
+                        <input className="w-full sm:w-24 p-2 text-sm rounded-lg border text-right focus:ring-2 focus:ring-teal-400 outline-none" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
+                        <button onClick={save} className="bg-teal-600 text-white p-2 rounded-lg hover:bg-teal-700"><Icon name="Check" size={16} /></button>
                     </div>
                 );
             }
 
             return (
-                <div className="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors group">
-                    <div className="flex-grow pr-4"><p className="font-medium text-slate-700 text-sm sm:text-base">{item.label}</p></div>
+                <div className="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-lg group transition-all">
+                    <span className="text-sm font-medium text-slate-600">{item.label}</span>
                     <div className="flex items-center gap-3">
-                        <span className="font-semibold text-slate-700 font-mono text-sm sm:text-base">{CURRENCY_FORMATTER.format(item.amount)}</span>
-                        <div className="flex gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setIsEditing(true)} className="p-1.5 text-slate-400 hover:text-teal-600"><Edit2 size={16} /></button>
-                            <button onClick={() => onDelete(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600"><Trash2 size={16} /></button>
+                        <span className="font-mono font-semibold text-slate-800">{CURRENCY_FORMATTER.format(item.amount)}</span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setIsEditing(true)} className="p-1 text-slate-400 hover:text-teal-600"><Icon name="Edit2" size={14} /></button>
+                            <button onClick={() => onDelete(item.id)} className="p-1 text-slate-400 hover:text-rose-600"><Icon name="Trash2" size={14} /></button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const BudgetSection = ({ title, items, onAdd, onUpdate, onDelete, colorTheme, icon, totalLabel = "Totaal" }) => {
-            const total = items.reduce((acc, item) => acc + item.amount, 0);
-            const themes = {
-                green: { header: 'bg-teal-50', text: 'text-teal-800', accent: 'teal', totalBg: 'bg-teal-50/50' },
-                red: { header: 'bg-rose-50', text: 'text-rose-800', accent: 'rose', totalBg: 'bg-rose-50/50' },
-                blue: { header: 'bg-sky-50', text: 'text-sky-800', accent: 'sky', totalBg: 'bg-sky-50/50' }
+        const BudgetSection = ({ title, items, onAdd, onUpdate, onDelete, colorTheme, iconName }) => {
+            const total = items.reduce((s, i) => s + i.amount, 0);
+            const theme = {
+                green: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-100' },
+                red: { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-100' },
+                blue: { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-100' }
             }[colorTheme];
 
             return (
-                <Card title={title} icon={icon} headerColor={themes.header} className="h-full flex flex-col shadow-sm">
-                    <div className="flex-grow space-y-1 mb-4">
-                        {items.length === 0 ? <div className="text-center py-6 text-slate-400 italic text-sm">Nog geen posten.</div> : 
-                        items.map(item => <EditableRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} accentColor={themes.accent} />)}
+                <Card title={title} iconName={iconName} headerColor={theme.bg}>
+                    <div className="space-y-1 min-h-[150px]">
+                        {items.map(item => <EditableRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />)}
+                        {items.length === 0 && <p className="text-center py-10 text-slate-400 text-xs italic">Nog geen gegevens</p>}
                     </div>
-                    <div className="mt-auto border-t border-slate-100 pt-4">
-                        <button onClick={onAdd} className={`flex items-center gap-2 text-sm font-medium ${themes.text} hover:opacity-70 transition-opacity mb-4`}><PlusCircle size={18} /><span>Toevoegen</span></button>
-                        <div className={`flex justify-between items-center p-4 rounded-xl ${themes.totalBg}`}><span className={`font-bold ${themes.text}`}>{totalLabel}</span><span className={`font-bold text-lg ${themes.text}`}>{CURRENCY_FORMATTER.format(total)}</span></div>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <button onClick={onAdd} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-teal-600 mb-4 uppercase tracking-widest"><Icon name="PlusCircle" size={14} /> Toevoegen</button>
+                        <div className={`flex justify-between items-center p-4 rounded-2xl ${theme.bg} ${theme.border} border`}>
+                            <span className={`text-sm font-bold ${theme.text}`}>Totaal</span>
+                            <span className={`text-lg font-black ${theme.text}`}>{CURRENCY_FORMATTER.format(total)}</span>
+                        </div>
                     </div>
                 </Card>
-            );
-        };
-
-        const SummaryChartComp = ({ expenses }) => {
-            const COLORS = ['#14b8a6', '#f43f5e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
-            const data = expenses.map(e => ({ name: e.label, value: e.amount })).filter(e => e.value > 0);
-            if (data.length === 0) return <div className="h-64 flex items-center justify-center text-slate-400 text-sm italic">Voeg uitgaven toe voor de grafiek</div>;
-            return (
-                <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                {data.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip formatter={(value) => `€ ${value.toFixed(2)}`} contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                            <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-            );
-        };
-
-        const TrendsView = ({ data, onArchive, onDeleteHistory }) => {
-            const [viewMode, setViewMode] = useState('history');
-            const [filterStart, setFilterStart] = useState('');
-            const [filterEnd, setFilterEnd] = useState('');
-
-            const filteredHistory = useMemo(() => {
-                let filtered = [...data.history].sort((a, b) => new Date(a.date) - new Date(b.date));
-                if (filterStart) filtered = filtered.filter(item => item.date.slice(0, 7) >= filterStart);
-                if (filterEnd) filtered = filtered.filter(item => item.date.slice(0, 7) <= filterEnd);
-                return filtered;
-            }, [data.history, filterStart, filterEnd]);
-
-            const totalInc = data.income.reduce((s, i) => s + i.amount, 0);
-            const totalExp = data.expenses.reduce((s, i) => s + i.amount, 0);
-            const net = totalInc - totalExp;
-
-            const projectionData = Array.from({ length: 12 }, (_, i) => ({
-                name: `M${i + 1}`,
-                cumNet: net * (i + 1),
-                income: totalInc,
-                expenses: totalExp
-            }));
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <Card>
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div className="flex bg-slate-100 p-1 rounded-lg">
-                                <button onClick={() => setViewMode('history')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'history' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500'}`}>Historie</button>
-                                <button onClick={() => setViewMode('projection')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'projection' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500'}`}>Prognose</button>
-                            </div>
-                            <button onClick={() => {
-                                const label = window.prompt("Maand label (bijv. Mei 2024):", new Date().toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }));
-                                if (label) onArchive(label);
-                            }} className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 w-full sm:w-auto justify-center"><Save size={18} />Archiveer Maand</button>
-                        </div>
-                    </Card>
-
-                    {viewMode === 'history' ? (
-                        <div className="space-y-6">
-                            {data.history.length > 0 && (
-                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
-                                    <div className="flex items-center gap-2 text-slate-500 mb-1 sm:mb-2"><Filter size={18} /><span className="text-sm font-medium">Filter Periode:</span></div>
-                                    <div className="flex-1 grid grid-cols-2 gap-4 w-full">
-                                        <div><label className="block text-xs text-slate-400 mb-1">Van</label><input type="month" value={filterStart} onChange={e => setFilterStart(e.target.value)} className="w-full p-2 bg-slate-50 border rounded-lg text-sm" /></div>
-                                        <div><label className="block text-xs text-slate-400 mb-1">Tot</label><input type="month" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} className="w-full p-2 bg-slate-50 border rounded-lg text-sm" /></div>
-                                    </div>
-                                    {(filterStart || filterEnd) && <button onClick={() => { setFilterStart(''); setFilterEnd(''); }} className="p-2 text-rose-500 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"><X size={20} /></button>}
-                                </div>
-                            )}
-
-                            <Card title="Trends" icon={<TrendingUp size={20} />}>
-                                {filteredHistory.length === 0 ? <div className="h-64 flex flex-col items-center justify-center text-slate-400"><Calendar size={48} className="opacity-10 mb-2" /><p>Geen data gevonden</p></div> : (
-                                    <div className="h-80 w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={filteredHistory}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                <XAxis dataKey="label" tick={{fontSize: 12}} />
-                                                <YAxis tick={{fontSize: 12}} tickFormatter={v => `€${v}`} />
-                                                <Tooltip />
-                                                <Legend />
-                                                <Bar name="Inkomsten" dataKey="income" fill="#14b8a6" radius={[4, 4, 0, 0]} />
-                                                <Bar name="Uitgaven" dataKey="expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                )}
-                            </Card>
-
-                            {filteredHistory.length > 0 && (
-                                <Card title="Logboek">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
-                                                <tr><th className="px-4 py-3">Maand</th><th className="px-4 py-3 text-right">Inkomsten</th><th className="px-4 py-3 text-right">Uitgaven</th><th className="px-4 py-3 text-right">Netto</th><th className="px-4 py-3 text-center">Actie</th></tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {filteredHistory.slice().reverse().map(item => (
-                                                    <tr key={item.id} className="hover:bg-slate-50">
-                                                        <td className="px-4 py-3 font-medium">{item.label}</td>
-                                                        <td className="px-4 py-3 text-right font-mono text-teal-600">{CURRENCY_FORMATTER.format(item.income)}</td>
-                                                        <td className="px-4 py-3 text-right font-mono text-rose-600">{CURRENCY_FORMATTER.format(item.expenses)}</td>
-                                                        <td className="px-4 py-3 text-right font-mono font-bold">{CURRENCY_FORMATTER.format(item.income - item.expenses)}</td>
-                                                        <td className="px-4 py-3 text-center"><button onClick={() => onDeleteHistory(item.id)} className="text-slate-300 hover:text-rose-500"><Trash2 size={16} /></button></td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </Card>
-                            )}
-                        </div>
-                    ) : (
-                        <Card title="Prognose volgend jaar" icon={<TrendingUp size={20} />}>
-                             <div className="h-80 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={projectionData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Area type="monotone" dataKey="cumNet" stroke="#10b981" fill="#d1fae5" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                             </div>
-                        </Card>
-                    )}
-                </div>
             );
         };
 
@@ -308,89 +196,207 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 return saved ? JSON.parse(saved) : INITIAL_DATA;
             });
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const fileInputRef = useRef(null);
+            const [tab, setTab] = useState('dashboard');
+            const [filterStart, setFilterStart] = useState('');
+            const [filterEnd, setFilterEnd] = useState('');
 
             useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }, [data]);
 
-            const handleUpdate = (section, id, updates) => {
-                setData(prev => ({ ...prev, [section]: prev[section].map(i => i.id === id ? { ...i, ...updates } : i) }));
+            const updateItem = (sec, id, up) => setData(p => ({ ...p, [sec]: p[sec].map(i => i.id === id ? { ...i, ...up } : i) }));
+            const deleteItem = (sec, id) => confirm("Verwijderen?") && setData(p => ({ ...p, [sec]: p[sec].filter(i => i.id !== id) }));
+            const addItem = (sec) => setData(p => ({ ...p, [sec]: [...p[sec], { id: Date.now().toString(), label: 'Nieuwe post', amount: 0 }] }));
+
+            const totals = {
+                inc: data.income.reduce((s, i) => s + i.amount, 0),
+                exp: data.expenses.reduce((s, i) => s + i.amount, 0),
+                sav: data.savings.reduce((s, i) => s + i.amount, 0)
+            };
+            const net = totals.inc - totals.exp;
+
+            const archive = () => {
+                const label = prompt("Naam voor deze maand:", new Date().toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }));
+                if (label) {
+                    setData(p => ({ 
+                        ...p, 
+                        history: [...p.history, { id: Date.now().toString(), date: new Date().toISOString(), label, income: totals.inc, expenses: totals.exp, savings: totals.sav }]
+                    }));
+                }
             };
 
-            const handleDelete = (section, id) => {
-                if (confirm("Item verwijderen?")) setData(prev => ({ ...prev, [section]: prev[section].filter(i => i.id !== id) }));
-            };
+            const filteredHistory = useMemo(() => {
+                let h = [...data.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (filterStart) h = h.filter(i => i.date.slice(0, 7) >= filterStart);
+                if (filterEnd) h = h.filter(i => i.date.slice(0, 7) <= filterEnd);
+                return h;
+            }, [data.history, filterStart, filterEnd]);
 
-            const handleAdd = (section) => {
-                const newItem = { id: Math.random().toString(36).substr(2, 9), label: 'Nieuwe post', amount: 0 };
-                setData(prev => ({ ...prev, [section]: [...prev[section], newItem] }));
-            };
-
-            const handleArchive = (label) => {
-                const income = data.income.reduce((s, i) => s + i.amount, 0);
-                const expenses = data.expenses.reduce((s, i) => s + i.amount, 0);
-                const savings = data.savings.reduce((s, i) => s + i.amount, 0);
-                setData(prev => ({ ...prev, history: [...prev.history, { id: Date.now().toString(), date: new Date().toISOString(), label, income, expenses, savings }] }));
-            };
-
-            const totalInc = data.income.reduce((s, i) => s + i.amount, 0);
-            const totalExp = data.expenses.reduce((s, i) => s + i.amount, 0);
-            const totalSav = data.savings.reduce((s, i) => s + i.amount, 0);
-            const net = totalInc - totalExp;
+            // Childcare calculation
+            const opvangKosten = data.expenses.filter(e => e.label.toLowerCase().includes('opvang') || e.label.toLowerCase().includes('bso')).reduce((s, i) => s + i.amount, 0);
+            const opvangToeslag = data.income.filter(i => i.label.toLowerCase().includes('toeslag')).reduce((s, i) => s + i.amount, 0);
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-20">
-                    <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="bg-white border-b sticky top-0 z-30">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3">
-                                <div className="bg-teal-500 p-2 rounded-lg text-white"><Calculator size={24} /></div>
-                                <h1 className="text-xl font-bold hidden sm:block">GezinsBudget</h1>
+                                <div className="bg-teal-600 text-white p-2 rounded-xl shadow-lg shadow-teal-100"><Icon name="Calculator" size={24} /></div>
+                                <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">GezinsBudget<span className="text-teal-500">.</span></h1>
                             </div>
-                            <nav className="flex gap-1 sm:gap-2">
-                                <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'dashboard' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:bg-slate-50'}`}>Overzicht</button>
-                                <button onClick={() => setActiveTab('details')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'details' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:bg-slate-50'}`}>Invoer</button>
-                                <button onClick={() => setActiveTab('trends')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'trends' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:bg-slate-50'}`}>Trends</button>
+                            <nav className="flex bg-slate-100 p-1 rounded-xl">
+                                {['dashboard', 'invoer', 'trends'].map(t => (
+                                    <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${tab === t ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                    </button>
+                                ))}
                             </nav>
-                            <button onClick={() => { if(confirm("Resetten?")) setData(INITIAL_DATA); }} className="text-slate-300 hover:text-rose-500 transition"><RefreshCcw size={20} /></button>
+                            <button onClick={() => confirm("Alles resetten?") && setData(INITIAL_DATA)} className="text-slate-300 hover:text-rose-500 transition-colors"><Icon name="RefreshCcw" size={20} /></button>
                         </div>
                     </header>
 
-                    <main className="max-w-7xl mx-auto px-4 py-8">
-                        {activeTab === 'dashboard' && (
+                    <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-grow">
+                        {tab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in">
+                                {/* Stats Grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <StatCard label="Inkomsten" value={CURRENCY_FORMATTER.format(totalInc)} colorClass="text-teal-700" bgClass="bg-teal-50" />
-                                    <StatCard label="Uitgaven" value={CURRENCY_FORMATTER.format(totalExp)} colorClass="text-rose-700" bgClass="bg-rose-50" />
-                                    <StatCard label="Netto" value={CURRENCY_FORMATTER.format(net)} colorClass={net >= 0 ? "text-emerald-700" : "text-rose-700"} bgClass={net >= 0 ? "bg-emerald-50" : "bg-rose-50"} />
-                                    <StatCard label="Reserveringen" value={CURRENCY_FORMATTER.format(totalSav)} colorClass="text-sky-700" bgClass="bg-sky-50" />
+                                    <StatCard label="Inkomsten" value={CURRENCY_FORMATTER.format(totals.inc)} colorClass="text-emerald-700" bgClass="bg-emerald-50" iconName="Wallet" />
+                                    <StatCard label="Uitgaven" value={CURRENCY_FORMATTER.format(totals.exp)} colorClass="text-rose-700" bgClass="bg-rose-50" iconName="TrendingDown" />
+                                    <StatCard label="Netto" value={CURRENCY_FORMATTER.format(net)} colorClass={net >= 0 ? "text-teal-700" : "text-rose-700"} bgClass={net >= 0 ? "bg-teal-50" : "bg-rose-50"} iconName="Activity" />
+                                    <StatCard label="Reserveringen" value={CURRENCY_FORMATTER.format(totals.sav)} colorClass="text-sky-700" bgClass="bg-sky-50" iconName="PiggyBank" />
                                 </div>
+
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <Card className="lg:col-span-2" title="Uitgaven Verdeling" icon={<PieChartIcon size={20} />}><SummaryChartComp expenses={data.expenses} /></Card>
-                                    <div className="space-y-4">
-                                        <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100 h-full">
-                                            <div className="flex items-center gap-2 mb-4 text-orange-800"><Baby size={24} /><h4 className="font-bold">Opvang Advies</h4></div>
-                                            <p className="text-sm text-orange-700 leading-relaxed">Let op: Toeslagen kunnen wijzigen per januari. Check maandelijks je 'Mijn Toeslagen' voor een accuraat budget.</p>
+                                    <Card className="lg:col-span-2" title="Uitgaven Analyse" iconName="PieChart">
+                                        <div className="flex flex-col md:flex-row items-center gap-8">
+                                            <div className="h-64 w-full md:w-1/2">
+                                                <ResponsiveContainer>
+                                                    <PieChart>
+                                                        <Pie data={data.expenses.map(e => ({ name: e.label, value: e.amount })).filter(e => e.value > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                                            {['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'].map((c, i) => <Cell key={i} fill={c} />)}
+                                                        </Pie>
+                                                        <Tooltip />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                            <div className="w-full md:w-1/2 space-y-4">
+                                                <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl">
+                                                    <div className="flex items-center gap-2 mb-2 text-orange-800 font-bold"><Icon name="Baby" /><span>Kinderopvang Check</span></div>
+                                                    <div className="text-sm space-y-1">
+                                                        <div className="flex justify-between text-slate-600"><span>Kosten:</span><span>{CURRENCY_FORMATTER.format(opvangKosten)}</span></div>
+                                                        <div className="flex justify-between text-slate-600"><span>Toeslag:</span><span>{CURRENCY_FORMATTER.format(opvangToeslag)}</span></div>
+                                                        <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200 mt-2 pt-1"><span>Netto eigen bijdrage:</span><span>{CURRENCY_FORMATTER.format(opvangKosten - opvangToeslag)}</span></div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-400 italic leading-relaxed">Boekhouder Tip: De kinderbijslag wordt elk kwartaal uitbetaald. Het is slim om dit bedrag maandelijks te reserveren voor grote aankopen zoals kleding of sport.</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Card>
+                                    
+                                    <Card title="Recente Acties" iconName="History">
+                                        <div className="space-y-4">
+                                            <button onClick={archive} className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 shadow-lg shadow-teal-100 transition-all flex items-center justify-center gap-2">
+                                                <Icon name="Save" size={18} /> Archiveer Maand
+                                            </button>
+                                            <div className="border-t pt-4">
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-3">Laatste archief</p>
+                                                {data.history.length > 0 ? (
+                                                    <div className="p-3 bg-slate-50 rounded-lg">
+                                                        <p className="font-bold text-sm text-slate-700">{data.history[data.history.length-1].label}</p>
+                                                        <p className="text-xs text-slate-400">Netto: {CURRENCY_FORMATTER.format(data.history[data.history.length-1].income - data.history[data.history.length-1].expenses)}</p>
+                                                    </div>
+                                                ) : <p className="text-xs text-slate-400 italic">Nog geen historie</p>}
+                                            </div>
+                                        </div>
+                                    </Card>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'details' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-                                <BudgetSection title="Inkomsten" items={data.income} onAdd={() => handleAdd('income')} onUpdate={(id, u) => handleUpdate('income', id, u)} onDelete={id => handleDelete('income', id)} colorTheme="green" icon={<Wallet size={20} />} />
-                                <BudgetSection title="Uitgaven" items={data.expenses} onAdd={() => handleAdd('expenses')} onUpdate={(id, u) => handleUpdate('expenses', id, u)} onDelete={id => handleDelete('expenses', id)} colorTheme="red" icon={<TrendingDown size={20} />} />
-                                <BudgetSection title="Sparen/Reserve" items={data.savings} onAdd={() => handleAdd('savings')} onUpdate={(id, u) => handleUpdate('savings', id, u)} onDelete={id => handleDelete('savings', id)} colorTheme="blue" icon={<PiggyBank size={20} />} />
+                        {tab === 'invoer' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                                <BudgetSection title="Inkomsten" items={data.income} colorTheme="green" iconName="Wallet" onAdd={() => addItem('income')} onUpdate={(id, u) => updateItem('income', id, u)} onDelete={id => deleteItem('income', id)} />
+                                <BudgetSection title="Uitgaven" items={data.expenses} colorTheme="red" iconName="TrendingDown" onAdd={() => addItem('expenses')} onUpdate={(id, u) => updateItem('expenses', id, u)} onDelete={id => deleteItem('expenses', id)} />
+                                <BudgetSection title="Sparen & Reserveren" items={data.savings} colorTheme="blue" iconName="PiggyBank" onAdd={() => addItem('savings')} onUpdate={(id, u) => updateItem('savings', id, u)} onDelete={id => deleteItem('savings', id)} />
                             </div>
                         )}
 
-                        {activeTab === 'trends' && <TrendsView data={data} onArchive={handleArchive} onDeleteHistory={id => handleDelete('history', id)} />}
+                        {tab === 'trends' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <Card title="Periode Filter" iconName="Filter">
+                                    <div className="flex flex-col sm:flex-row gap-4 items-end">
+                                        <div className="flex-1 w-full">
+                                            <label className="block text-xs font-bold text-slate-400 mb-1 ml-1 uppercase">Vanaf</label>
+                                            <input type="month" className="w-full p-2 border rounded-xl outline-none focus:ring-2 focus:ring-teal-400" value={filterStart} onChange={e => setFilterStart(e.target.value)} />
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <label className="block text-xs font-bold text-slate-400 mb-1 ml-1 uppercase">Tot</label>
+                                            <input type="month" className="w-full p-2 border rounded-xl outline-none focus:ring-2 focus:ring-teal-400" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} />
+                                        </div>
+                                        {(filterStart || filterEnd) && (
+                                            <button onClick={() => {setFilterStart(''); setFilterEnd('');}} className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors"><Icon name="X" /></button>
+                                        )}
+                                    </div>
+                                </Card>
+
+                                <Card title="Inkomsten vs Uitgaven" iconName="TrendingUp">
+                                    <div className="h-80 w-full">
+                                        <ResponsiveContainer>
+                                            <BarChart data={filteredHistory}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} tickFormatter={v => `€${v}`} />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar name="Inkomsten" dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                <Bar name="Uitgaven" dataKey="expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Card>
+
+                                <Card title="Historisch Overzicht">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="text-xs text-slate-400 uppercase bg-slate-50">
+                                                <tr>
+                                                    <th className="px-4 py-3">Maand</th>
+                                                    <th className="px-4 py-3 text-right">Inkomsten</th>
+                                                    <th className="px-4 py-3 text-right">Uitgaven</th>
+                                                    <th className="px-4 py-3 text-right">Sparen</th>
+                                                    <th className="px-4 py-3 text-right">Netto</th>
+                                                    <th className="px-4 py-3 text-center">Actie</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredHistory.slice().reverse().map(i => (
+                                                    <tr key={i.id} className="hover:bg-slate-50">
+                                                        <td className="px-4 py-3 font-bold text-slate-700">{i.label}</td>
+                                                        <td className="px-4 py-3 text-right font-mono text-emerald-600">{CURRENCY_FORMATTER.format(i.income)}</td>
+                                                        <td className="px-4 py-3 text-right font-mono text-rose-600">{CURRENCY_FORMATTER.format(i.expenses)}</td>
+                                                        <td className="px-4 py-3 text-right font-mono text-sky-600">{CURRENCY_FORMATTER.format(i.savings)}</td>
+                                                        <td className="px-4 py-3 text-right font-mono font-bold">{CURRENCY_FORMATTER.format(i.income - i.expenses)}</td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <button onClick={() => setData(p => ({...p, history: p.history.filter(h => h.id !== i.id)}))} className="text-slate-300 hover:text-rose-500"><Icon name="Trash2" size={16} /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {filteredHistory.length === 0 && <tr><td colSpan="6" className="py-10 text-center text-slate-400 italic">Geen historie gevonden voor deze filters</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
                     </main>
+
+                    <footer className="py-6 text-center text-slate-400 text-xs border-t">
+                        &copy; {new Date().getFullYear()} GezinsBudget Planner Pro &bull; Lokaal opgeslagen
+                    </footer>
                 </div>
             );
         };
 
-        const root = createRoot(document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
