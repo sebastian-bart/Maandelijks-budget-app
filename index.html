@@ -21,8 +21,10 @@
             @apply w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all;
         }
 
+        /* Grootboek stijl voor bedragen */
         .amount-input {
-            @apply text-right pr-4 pl-7 font-mono font-medium;
+            @apply text-right pr-4 pl-9 font-mono font-semibold text-slate-800;
+            min-width: 140px;
         }
 
         /* Verberg pijltjes bij number inputs */
@@ -45,8 +47,8 @@
         @media (min-width: 768px) {
             .budget-row {
                 display: grid;
-                grid-template-columns: 1fr 180px 40px;
-                gap: 1rem;
+                grid-template-columns: 1fr 200px 40px;
+                gap: 1.5rem;
             }
         }
         
@@ -59,10 +61,12 @@
             }
             .label-input {
                 flex: 1;
-                font-size: 0.75rem !important;
+                font-size: 0.8rem !important;
+                min-width: 0; /* Voorkom overflow */
             }
             .amount-container {
-                width: 110px;
+                width: 130px;
+                flex-shrink: 0;
             }
         }
     </style>
@@ -88,7 +92,7 @@
                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight text-center md:text-left">
                     GezinsBudget <span class="text-emerald-500">Pro</span>
                 </h1>
-                <p class="text-slate-500 text-sm text-center md:text-left">Financieel grootboek voor een gezin van 5</p>
+                <p class="text-slate-500 text-sm text-center md:text-left">Interactief Grootboek voor Gezinnen</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="exportData()" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition">Exporteer</button>
@@ -98,17 +102,17 @@
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-            <div class="bg-emerald-500 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-emerald-100">
+            <div class="bg-emerald-500 text-white p-5 sm:p-7 rounded-3xl shadow-lg shadow-emerald-100">
                 <p class="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Maandinkomsten</p>
-                <h2 id="total-income-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
+                <h2 id="total-income-display" class="text-2xl sm:text-4xl font-bold">€ 0,00</h2>
             </div>
-            <div class="bg-rose-500 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-rose-100">
+            <div class="bg-rose-500 text-white p-5 sm:p-7 rounded-3xl shadow-lg shadow-rose-100">
                 <p class="text-rose-100 text-[10px] font-bold uppercase tracking-widest mb-1">Maanduitgaven</p>
-                <h2 id="total-expenses-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
+                <h2 id="total-expenses-display" class="text-2xl sm:text-4xl font-bold">€ 0,00</h2>
             </div>
-            <div class="bg-slate-800 text-white p-5 sm:p-6 rounded-3xl shadow-lg shadow-slate-200">
+            <div class="bg-slate-800 text-white p-5 sm:p-7 rounded-3xl shadow-lg shadow-slate-200">
                 <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Besteedbaar Saldo</p>
-                <h2 id="net-result-display" class="text-2xl sm:text-3xl font-bold">€ 0,00</h2>
+                <h2 id="net-result-display" class="text-2xl sm:text-4xl font-bold">€ 0,00</h2>
             </div>
         </div>
 
@@ -116,9 +120,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10">
             
             <!-- Inkomsten -->
-            <section class="pastel-green border p-5 sm:p-8 rounded-3xl">
+            <section class="pastel-green border p-5 sm:p-8 rounded-3xl shadow-sm">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-base sm:text-lg font-bold text-emerald-900 flex items-center gap-2 uppercase tracking-wide">
+                    <h3 class="text-sm sm:text-base font-bold text-emerald-900 flex items-center gap-2 uppercase tracking-widest">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-1 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
                         Inkomsten
                     </h3>
@@ -130,11 +134,11 @@
             </section>
 
             <!-- Uitgaven -->
-            <section class="pastel-rose border p-5 sm:p-8 rounded-3xl">
+            <section class="pastel-rose border p-5 sm:p-8 rounded-3xl shadow-sm">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-base sm:text-lg font-bold text-rose-900 flex items-center gap-2 uppercase tracking-wide">
+                    <h3 class="text-sm sm:text-base font-bold text-rose-900 flex items-center gap-2 uppercase tracking-widest">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
-                        Maanduitgaven
+                        Uitgaven
                     </h3>
                     <button onclick="addItem('expenses')" class="bg-rose-200 text-rose-800 h-8 w-8 rounded-full font-bold hover:bg-rose-300 transition flex items-center justify-center">+</button>
                 </div>
@@ -147,15 +151,15 @@
             <section class="pastel-blue border p-5 sm:p-8 rounded-3xl lg:col-span-2 shadow-sm">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                     <div>
-                        <h3 class="text-base sm:text-lg font-bold text-sky-900 flex items-center gap-2 uppercase tracking-wide">
+                        <h3 class="text-sm sm:text-base font-bold text-sky-900 flex items-center gap-2 uppercase tracking-widest">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd" /></svg>
                             Sparen & Reserveringen
                         </h3>
-                        <p class="text-sky-600 text-[11px] mt-1 font-medium">Extra inkomsten/reserveringen die apart staan van het maandbudget.</p>
+                        <p class="text-sky-600 text-[11px] mt-1 font-medium">Extra budgetpotjes die niet bij de dagelijkse uitgaven horen.</p>
                     </div>
-                    <div class="bg-white border-2 border-sky-200 px-6 py-4 rounded-2xl flex flex-col items-end">
+                    <div class="bg-white border-2 border-sky-200 px-8 py-5 rounded-3xl flex flex-col items-end">
                         <p class="text-sky-400 text-[10px] uppercase font-bold tracking-widest mb-1">Totaal Gereserveerd</p>
-                        <p id="total-savings-display" class="text-2xl font-black text-sky-900">€ 0,00</p>
+                        <p id="total-savings-display" class="text-3xl font-black text-sky-900">€ 0,00</p>
                     </div>
                 </div>
 
@@ -164,20 +168,20 @@
                 </div>
                 
                 <button onclick="addItem('savings')" class="mt-8 w-full py-4 border-2 border-dashed border-sky-300 rounded-2xl text-sky-600 text-sm font-bold uppercase tracking-widest hover:bg-sky-50 transition-all">
-                    + Nieuwe post toevoegen
+                    + Nieuwe reservering toevoegen
                 </button>
             </section>
 
         </div>
 
         <footer class="mt-20 py-8 text-center text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] border-t border-slate-100">
-            GezinsBudget Pro &bull; Geen Cloud &bull; 100% Privacy
+            GezinsBudget Pro &bull; Privé & Offline &bull; 2024
         </footer>
     </div>
 
     <!-- UI Logic Script -->
     <script>
-        const STORAGE_KEY = 'family_budget_data_v6_final';
+        const STORAGE_KEY = 'family_budget_data_v7_final';
 
         // Standaardwaarden voor een gezin van 5
         let budgetData = {
@@ -198,7 +202,7 @@
             savings: [
                 { id: 11, label: 'Kinderbijslag (kwartaal)', amount: 900 },
                 { id: 12, label: 'Vakantiegeld', amount: 3500 },
-                { id: 13, label: '13e Maand / Bonus', amount: 2000 }
+                { id: 13, label: 'Eindejaarsuitkering', amount: 2000 }
             ]
         };
 
@@ -207,7 +211,7 @@
             if (saved) {
                 try {
                     budgetData = JSON.parse(saved);
-                } catch(e) { console.error("Data corrupt, using defaults."); }
+                } catch(e) { console.error("Data herstel mislukt."); }
             }
             render();
         }
@@ -229,18 +233,19 @@
                 row.className = 'budget-row bg-white/70 p-2 sm:p-3 rounded-2xl border border-white shadow-sm animate-pop';
                 
                 row.innerHTML = `
-                    <div class="flex-grow">
-                        <input type="text" class="input-field label-input font-semibold text-slate-700" value="${item.label}" 
+                    <div class="flex-grow min-w-0">
+                        <input type="text" class="input-field label-input font-semibold text-slate-700 truncate" value="${item.label}" 
                             placeholder="Omschrijving"
                             onchange="updateItem('${category}', ${item.id}, 'label', this.value)">
                     </div>
                     <div class="amount-container relative">
-                        <span class="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">€</span>
+                        <!-- Euroteken vast aan de linkerkant -->
+                        <span class="absolute left-3 top-[11px] text-slate-400 text-xs font-bold pointer-events-none">€</span>
                         <input type="number" class="input-field amount-input" value="${item.amount}" 
                             step="0.01"
                             onchange="updateItem('${category}', ${item.id}, 'amount', this.value)">
                     </div>
-                    <div class="flex justify-center">
+                    <div class="flex justify-center shrink-0">
                         <button onclick="deleteItem('${category}', ${item.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         </button>
@@ -295,6 +300,7 @@
             }
         }
 
+        // Formatteer naar € 0.000,00 stijl
         function formatEuro(val) {
             return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
         }
@@ -304,7 +310,7 @@
         }
 
         function resetData() {
-            if (confirm('Alle gegevens wissen?')) {
+            if (confirm('Wilt u echt alle gegevens wissen?')) {
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
             }
