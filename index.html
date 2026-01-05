@@ -3,43 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GezinsBudget Planner Pro</title>
-    
-    <!-- Scripts: Tailwind, React, Lucide Icons, Recharts, Babel -->
+    <title>GezinsBudget Pro - Familie van 5</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              pastel: {
-                green: '#d1fae5',
-                greenDark: '#065f46',
-                blue: '#e0f2fe',
-                blueDark: '#075985',
-                rose: '#fff1f2',
-                roseDark: '#9f1239',
-              }
-            }
-          }
-        }
-      }
-    </script>
-    
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      body { font-family: 'Inter', sans-serif; }
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: #f1f5f9; }
-      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-      .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .pastel-green { background-color: #ecfdf5; border-color: #a7f3d0; }
+        .pastel-rose { background-color: #fff1f2; border-color: #fecdd3; }
+        .pastel-blue { background-color: #f0f9ff; border-color: #bae6fd; }
+        
+        .input-field {
+            @apply w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all;
+        }
+
+        /* Verberg pijltjes bij number inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 <script type="importmap">
 {
@@ -54,350 +50,255 @@
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-700 antialiased">
-    <div id="root"></div>
+<body class="text-slate-800">
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-        const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-            PieChart, Pie, Cell, AreaChart, Area 
-        } = Recharts;
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">GezinsBudget <span class="text-emerald-500">Pro</span></h1>
+                <p class="text-slate-500">Financieel overzicht voor een gezin van 5</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition">Exporteer</button>
+                <button onclick="resetData()" class="bg-rose-50 text-rose-600 border border-rose-100 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition">Reset</button>
+            </div>
+        </header>
 
-        // --- Icon Component Wrapper ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const [iconSvg, setIconSvg] = useState("");
-            useEffect(() => {
-                if (window.lucide) {
-                    const icon = window.lucide.icons[name];
-                    if (icon) setIconSvg(icon.toSvg({ size, class: className }));
-                }
-            }, [name, size, className]);
-            return <span dangerouslySetInnerHTML={{ __html: iconSvg }} />;
-        };
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-emerald-500 text-white p-6 rounded-3xl shadow-lg shadow-emerald-100">
+                <p class="text-emerald-100 text-sm font-medium uppercase tracking-wider mb-1">Maandelijkse Inkomsten</p>
+                <h2 id="total-income-display" class="text-3xl font-bold">€ 0,00</h2>
+            </div>
+            <div class="bg-rose-500 text-white p-6 rounded-3xl shadow-lg shadow-rose-100">
+                <p class="text-rose-100 text-sm font-medium uppercase tracking-wider mb-1">Maandelijkse Uitgaven</p>
+                <h2 id="total-expenses-display" class="text-3xl font-bold">€ 0,00</h2>
+            </div>
+            <div class="bg-slate-800 text-white p-6 rounded-3xl shadow-lg shadow-slate-200">
+                <p class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Netto Resultaat</p>
+                <h2 id="net-result-display" class="text-3xl font-bold">€ 0,00</h2>
+            </div>
+        </div>
 
-        // --- CONSTANTS ---
-        const STORAGE_KEY = 'gezinsbudget_v2_single';
-        const CURRENCY_FORMATTER = new Intl.NumberFormat('nl-NL', {
-            style: 'currency',
-            currency: 'EUR',
-            minimumFractionDigits: 2,
-        });
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Inkomsten Sectie -->
+            <section class="pastel-green border p-6 rounded-3xl h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                        Inkomsten (Maandelijks)
+                    </h3>
+                    <button onclick="addItem('income')" class="text-emerald-600 hover:text-emerald-800 font-bold text-xl">+</button>
+                </div>
+                <div id="income-list" class="space-y-4">
+                    <!-- Dynamic Rows -->
+                </div>
+            </section>
 
-        const INITIAL_DATA = {
+            <!-- Uitgaven Sectie -->
+            <section class="pastel-rose border p-6 rounded-3xl h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
+                        Uitgaven (Maandelijks)
+                    </h3>
+                    <button onclick="addItem('expenses')" class="text-rose-600 hover:text-rose-800 font-bold text-xl">+</button>
+                </div>
+                <div id="expenses-list" class="space-y-4">
+                    <!-- Dynamic Rows -->
+                </div>
+            </section>
+
+            <!-- Reserveringen Sectie -->
+            <section class="pastel-blue border p-6 rounded-3xl lg:col-span-2">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-sky-900 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.657 15.657a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
+                            Apart Sparen / Reserveringen (Kwartaal/Jaar)
+                        </h3>
+                        <p class="text-sky-600 text-xs mt-1 italic">Deze bedragen worden niet meegeteld in het maandelijks saldo.</p>
+                    </div>
+                    <div class="bg-sky-500 text-white px-6 py-3 rounded-2xl">
+                        <p class="text-sky-100 text-[10px] uppercase font-bold tracking-widest">Totaal Gereserveerd</p>
+                        <p id="total-savings-display" class="text-xl font-black">€ 0,00</p>
+                    </div>
+                </div>
+                
+                <div class="hidden md:block mb-4 px-4">
+                    <div class="grid grid-cols-12 gap-4 text-xs font-bold text-sky-800 uppercase tracking-wider">
+                        <div class="col-span-8">Omschrijving</div>
+                        <div class="col-span-3 text-right">Bedrag</div>
+                        <div class="col-span-1"></div>
+                    </div>
+                </div>
+
+                <div id="savings-list" class="space-y-4">
+                    <!-- Dynamic Rows -->
+                </div>
+                
+                <button onclick="addItem('savings')" class="mt-6 w-full py-3 border-2 border-dashed border-sky-200 rounded-2xl text-sky-600 font-medium hover:bg-sky-100/50 transition">
+                    + Nieuwe reservering toevoegen
+                </button>
+            </section>
+
+        </div>
+
+        <footer class="mt-16 text-center text-slate-400 text-xs">
+            GezinsBudget Pro &copy; 2024 - Lokaal opgeslagen in uw browser
+        </footer>
+    </div>
+
+    <!-- UI Templates Script -->
+    <script>
+        const STORAGE_KEY = 'family_budget_data_v5';
+
+        let budgetData = {
             income: [
-                { id: 'i1', label: 'Salaris 1 (Netto)', amount: 2500 },
-                { id: 'i2', label: 'Salaris 2 (Netto)', amount: 2200 },
-                { id: 'i3', label: 'Kinderopvangtoeslag', amount: 850 },
-                { id: 'i4', label: 'Kindgebonden Budget', amount: 120 },
+                { id: 1, label: 'Salaris 1 (Netto)', amount: 2600 },
+                { id: 2, label: 'Salaris 2 (Netto)', amount: 2400 },
+                { id: 3, label: 'Kinderopvangtoeslag', amount: 850 },
+                { id: 4, label: 'Kindgebonden budget', amount: 150 }
             ],
             expenses: [
-                { id: 'e1', label: 'Hypotheek / Huur', amount: 1200 },
-                { id: 'e2', label: 'Kinderopvang / BSO', amount: 1350 },
-                { id: 'e3', label: 'Boodschappen', amount: 750 },
-                { id: 'e4', label: 'Gas, Water, Licht', amount: 250 },
-                { id: 'e5', label: 'Verzekeringen', amount: 180 },
+                { id: 5, label: 'Hypotheek/Huur', amount: 1200 },
+                { id: 6, label: 'Boodschappen', amount: 900 },
+                { id: 7, label: 'Kinderopvang', amount: 1100 },
+                { id: 8, label: 'BSO', amount: 450 },
+                { id: 9, label: 'Energie & Water', amount: 250 },
+                { id: 10, label: 'Zorgverzekering', amount: 320 }
             ],
             savings: [
-                { id: 's1', label: 'Vakantiegeld (Reservering)', amount: 350 },
-                { id: 's2', label: 'Kinderbijslag (Sparen)', amount: 100 },
-            ],
-            history: []
+                { id: 11, label: 'Kinderbijslag (per kwartaal)', amount: 900 },
+                { id: 12, label: 'Vakantiegeld (jaarlijks)', amount: 3500 },
+                { id: 13, label: 'Eindejaarsuitkering', amount: 2000 }
+            ]
         };
 
-        // --- COMPONENTS ---
-
-        const Card = ({ children, className = "", title, iconName, headerColor = "bg-white" }) => (
-            <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden ${className}`}>
-                {(title || iconName) && (
-                    <div className={`px-6 py-4 border-b border-slate-100 flex items-center gap-2 ${headerColor}`}>
-                        {iconName && <Icon name={iconName} className="text-slate-500" />}
-                        {title && <h3 className="font-semibold text-slate-800">{title}</h3>}
-                    </div>
-                )}
-                <div className="p-5">{children}</div>
-            </div>
-        );
-
-        const StatCard = ({ label, value, colorClass, bgClass, iconName }) => (
-            <div className={`p-5 rounded-2xl ${bgClass} border border-white/50 shadow-sm flex items-start justify-between`}>
-                <div>
-                    <p className="text-slate-500 font-medium text-xs uppercase tracking-wider mb-1">{label}</p>
-                    <p className={`text-2xl font-bold ${colorClass}`}>{value}</p>
-                </div>
-                {iconName && <div className="p-2 rounded-lg bg-white/50"><Icon name={iconName} size={20} className={colorClass} /></div>}
-            </div>
-        );
-
-        const EditableRow = ({ item, onUpdate, onDelete, colorTheme }) => {
-            const [isEditing, setIsEditing] = useState(false);
-            const [label, setLabel] = useState(item.label);
-            const [amount, setAmount] = useState(item.amount.toString());
-
-            const save = () => {
-                const val = parseFloat(amount.replace(',', '.'));
-                onUpdate(item.id, { label, amount: isNaN(val) ? 0 : val });
-                setIsEditing(false);
-            };
-
-            if (isEditing) {
-                return (
-                    <div className="flex flex-col sm:flex-row gap-2 p-2 bg-slate-50 rounded-xl mb-2 animate-fade-in border border-slate-200">
-                        <input className="flex-grow p-2 text-sm rounded-lg border focus:ring-2 focus:ring-teal-400 outline-none" value={label} onChange={e => setLabel(e.target.value)} />
-                        <input className="w-full sm:w-24 p-2 text-sm rounded-lg border text-right focus:ring-2 focus:ring-teal-400 outline-none" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
-                        <button onClick={save} className="bg-teal-600 text-white p-2 rounded-lg hover:bg-teal-700"><Icon name="Check" size={16} /></button>
-                    </div>
-                );
+        function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                budgetData = JSON.parse(saved);
             }
+            render();
+        }
 
-            return (
-                <div className="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-lg group transition-all">
-                    <span className="text-sm font-medium text-slate-600">{item.label}</span>
-                    <div className="flex items-center gap-3">
-                        <span className="font-mono font-semibold text-slate-800">{CURRENCY_FORMATTER.format(item.amount)}</span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setIsEditing(true)} className="p-1 text-slate-400 hover:text-teal-600"><Icon name="Edit2" size={14} /></button>
-                            <button onClick={() => onDelete(item.id)} className="p-1 text-slate-400 hover:text-rose-600"><Icon name="Trash2" size={14} /></button>
+        function render() {
+            renderSection('income', 'income-list');
+            renderSection('expenses', 'expenses-list');
+            renderSection('savings', 'savings-list');
+            calculateTotals();
+            save();
+        }
+
+        function renderSection(category, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            budgetData[category].forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-white/60 p-3 rounded-2xl border border-white/50 animate-pop';
+                
+                row.innerHTML = `
+                    <div class="md:col-span-8">
+                        <label class="block md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1">Omschrijving</label>
+                        <input type="text" class="input-field" value="${item.label}" 
+                            onchange="updateItem('${category}', ${item.id}, 'label', this.value)">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1">Bedrag (€)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-slate-400">€</span>
+                            <input type="number" class="input-field pl-7 text-right font-mono" value="${item.amount}" 
+                                onchange="updateItem('${category}', ${item.id}, 'amount', this.value)">
                         </div>
                     </div>
-                </div>
-            );
-        };
-
-        const BudgetSection = ({ title, items, onAdd, onUpdate, onDelete, colorTheme, iconName }) => {
-            const total = items.reduce((s, i) => s + i.amount, 0);
-            const theme = {
-                green: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-100' },
-                red: { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-100' },
-                blue: { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-100' }
-            }[colorTheme];
-
-            return (
-                <Card title={title} iconName={iconName} headerColor={theme.bg}>
-                    <div className="space-y-1 min-h-[150px]">
-                        {items.map(item => <EditableRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />)}
-                        {items.length === 0 && <p className="text-center py-10 text-slate-400 text-xs italic">Nog geen gegevens</p>}
+                    <div class="md:col-span-1 flex justify-center">
+                        <button onclick="deleteItem('${category}', ${item.id})" class="text-slate-300 hover:text-rose-500 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        </button>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                        <button onClick={onAdd} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-teal-600 mb-4 uppercase tracking-widest"><Icon name="PlusCircle" size={14} /> Toevoegen</button>
-                        <div className={`flex justify-between items-center p-4 rounded-2xl ${theme.bg} ${theme.border} border`}>
-                            <span className={`text-sm font-bold ${theme.text}`}>Totaal</span>
-                            <span className={`text-lg font-black ${theme.text}`}>{CURRENCY_FORMATTER.format(total)}</span>
-                        </div>
-                    </div>
-                </Card>
-            );
-        };
-
-        // --- MAIN APP ---
-
-        const App = () => {
-            const [data, setData] = useState(() => {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                return saved ? JSON.parse(saved) : INITIAL_DATA;
+                `;
+                container.appendChild(row);
             });
-            const [tab, setTab] = useState('dashboard');
-            const [filterStart, setFilterStart] = useState('');
-            const [filterEnd, setFilterEnd] = useState('');
+        }
 
-            useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }, [data]);
-
-            const updateItem = (sec, id, up) => setData(p => ({ ...p, [sec]: p[sec].map(i => i.id === id ? { ...i, ...up } : i) }));
-            const deleteItem = (sec, id) => confirm("Verwijderen?") && setData(p => ({ ...p, [sec]: p[sec].filter(i => i.id !== id) }));
-            const addItem = (sec) => setData(p => ({ ...p, [sec]: [...p[sec], { id: Date.now().toString(), label: 'Nieuwe post', amount: 0 }] }));
-
-            const totals = {
-                inc: data.income.reduce((s, i) => s + i.amount, 0),
-                exp: data.expenses.reduce((s, i) => s + i.amount, 0),
-                sav: data.savings.reduce((s, i) => s + i.amount, 0)
-            };
-            const net = totals.inc - totals.exp;
-
-            const archive = () => {
-                const label = prompt("Naam voor deze maand:", new Date().toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' }));
-                if (label) {
-                    setData(p => ({ 
-                        ...p, 
-                        history: [...p.history, { id: Date.now().toString(), date: new Date().toISOString(), label, income: totals.inc, expenses: totals.exp, savings: totals.sav }]
-                    }));
+        function updateItem(category, id, field, value) {
+            const item = budgetData[category].find(i => i.id === id);
+            if (item) {
+                if (field === 'amount') {
+                    item.amount = parseFloat(value) || 0;
+                } else {
+                    item.label = value;
                 }
-            };
+            }
+            calculateTotals();
+            save();
+        }
 
-            const filteredHistory = useMemo(() => {
-                let h = [...data.history].sort((a, b) => new Date(a.date) - new Date(b.date));
-                if (filterStart) h = h.filter(i => i.date.slice(0, 7) >= filterStart);
-                if (filterEnd) h = h.filter(i => i.date.slice(0, 7) <= filterEnd);
-                return h;
-            }, [data.history, filterStart, filterEnd]);
+        function addItem(category) {
+            const newId = Date.now();
+            budgetData[category].push({ id: newId, label: 'Nieuwe post', amount: 0 });
+            render();
+        }
 
-            // Childcare calculation
-            const opvangKosten = data.expenses.filter(e => e.label.toLowerCase().includes('opvang') || e.label.toLowerCase().includes('bso')).reduce((s, i) => s + i.amount, 0);
-            const opvangToeslag = data.income.filter(i => i.label.toLowerCase().includes('toeslag')).reduce((s, i) => s + i.amount, 0);
+        function deleteItem(category, id) {
+            budgetData[category] = budgetData[category].filter(i => i.id !== id);
+            render();
+        }
 
-            return (
-                <div className="min-h-screen flex flex-col">
-                    {/* Header */}
-                    <header className="bg-white border-b sticky top-0 z-30">
-                        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-teal-600 text-white p-2 rounded-xl shadow-lg shadow-teal-100"><Icon name="Calculator" size={24} /></div>
-                                <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">GezinsBudget<span className="text-teal-500">.</span></h1>
-                            </div>
-                            <nav className="flex bg-slate-100 p-1 rounded-xl">
-                                {['dashboard', 'invoer', 'trends'].map(t => (
-                                    <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${tab === t ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                        {t.charAt(0).toUpperCase() + t.slice(1)}
-                                    </button>
-                                ))}
-                            </nav>
-                            <button onClick={() => confirm("Alles resetten?") && setData(INITIAL_DATA)} className="text-slate-300 hover:text-rose-500 transition-colors"><Icon name="RefreshCcw" size={20} /></button>
-                        </div>
-                    </header>
+        function calculateTotals() {
+            const totalIncome = budgetData.income.reduce((sum, i) => sum + i.amount, 0);
+            const totalExpenses = budgetData.expenses.reduce((sum, i) => sum + i.amount, 0);
+            const totalSavings = budgetData.savings.reduce((sum, i) => sum + i.amount, 0);
+            const net = totalIncome - totalExpenses;
 
-                    <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-grow">
-                        {tab === 'dashboard' && (
-                            <div className="space-y-8 animate-fade-in">
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <StatCard label="Inkomsten" value={CURRENCY_FORMATTER.format(totals.inc)} colorClass="text-emerald-700" bgClass="bg-emerald-50" iconName="Wallet" />
-                                    <StatCard label="Uitgaven" value={CURRENCY_FORMATTER.format(totals.exp)} colorClass="text-rose-700" bgClass="bg-rose-50" iconName="TrendingDown" />
-                                    <StatCard label="Netto" value={CURRENCY_FORMATTER.format(net)} colorClass={net >= 0 ? "text-teal-700" : "text-rose-700"} bgClass={net >= 0 ? "bg-teal-50" : "bg-rose-50"} iconName="Activity" />
-                                    <StatCard label="Reserveringen" value={CURRENCY_FORMATTER.format(totals.sav)} colorClass="text-sky-700" bgClass="bg-sky-50" iconName="PiggyBank" />
-                                </div>
+            document.getElementById('total-income-display').innerText = formatEuro(totalIncome);
+            document.getElementById('total-expenses-display').innerText = formatEuro(totalExpenses);
+            document.getElementById('net-result-display').innerText = formatEuro(net);
+            document.getElementById('total-savings-display').innerText = formatEuro(totalSavings);
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <Card className="lg:col-span-2" title="Uitgaven Analyse" iconName="PieChart">
-                                        <div className="flex flex-col md:flex-row items-center gap-8">
-                                            <div className="h-64 w-full md:w-1/2">
-                                                <ResponsiveContainer>
-                                                    <PieChart>
-                                                        <Pie data={data.expenses.map(e => ({ name: e.label, value: e.amount })).filter(e => e.value > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                                            {['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'].map((c, i) => <Cell key={i} fill={c} />)}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                            <div className="w-full md:w-1/2 space-y-4">
-                                                <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl">
-                                                    <div className="flex items-center gap-2 mb-2 text-orange-800 font-bold"><Icon name="Baby" /><span>Kinderopvang Check</span></div>
-                                                    <div className="text-sm space-y-1">
-                                                        <div className="flex justify-between text-slate-600"><span>Kosten:</span><span>{CURRENCY_FORMATTER.format(opvangKosten)}</span></div>
-                                                        <div className="flex justify-between text-slate-600"><span>Toeslag:</span><span>{CURRENCY_FORMATTER.format(opvangToeslag)}</span></div>
-                                                        <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200 mt-2 pt-1"><span>Netto eigen bijdrage:</span><span>{CURRENCY_FORMATTER.format(opvangKosten - opvangToeslag)}</span></div>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs text-slate-400 italic leading-relaxed">Boekhouder Tip: De kinderbijslag wordt elk kwartaal uitbetaald. Het is slim om dit bedrag maandelijks te reserveren voor grote aankopen zoals kleding of sport.</p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                    
-                                    <Card title="Recente Acties" iconName="History">
-                                        <div className="space-y-4">
-                                            <button onClick={archive} className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 shadow-lg shadow-teal-100 transition-all flex items-center justify-center gap-2">
-                                                <Icon name="Save" size={18} /> Archiveer Maand
-                                            </button>
-                                            <div className="border-t pt-4">
-                                                <p className="text-xs font-bold text-slate-400 uppercase mb-3">Laatste archief</p>
-                                                {data.history.length > 0 ? (
-                                                    <div className="p-3 bg-slate-50 rounded-lg">
-                                                        <p className="font-bold text-sm text-slate-700">{data.history[data.history.length-1].label}</p>
-                                                        <p className="text-xs text-slate-400">Netto: {CURRENCY_FORMATTER.format(data.history[data.history.length-1].income - data.history[data.history.length-1].expenses)}</p>
-                                                    </div>
-                                                ) : <p className="text-xs text-slate-400 italic">Nog geen historie</p>}
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </div>
-                            </div>
-                        )}
+            // Kleur indicatie voor netto resultaat
+            const netDisplay = document.getElementById('net-result-display').parentElement;
+            if (net < 0) {
+                netDisplay.classList.remove('bg-slate-800');
+                netDisplay.classList.add('bg-rose-600');
+            } else {
+                netDisplay.classList.remove('bg-rose-600');
+                netDisplay.classList.add('bg-slate-800');
+            }
+        }
 
-                        {tab === 'invoer' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-                                <BudgetSection title="Inkomsten" items={data.income} colorTheme="green" iconName="Wallet" onAdd={() => addItem('income')} onUpdate={(id, u) => updateItem('income', id, u)} onDelete={id => deleteItem('income', id)} />
-                                <BudgetSection title="Uitgaven" items={data.expenses} colorTheme="red" iconName="TrendingDown" onAdd={() => addItem('expenses')} onUpdate={(id, u) => updateItem('expenses', id, u)} onDelete={id => deleteItem('expenses', id)} />
-                                <BudgetSection title="Sparen & Reserveren" items={data.savings} colorTheme="blue" iconName="PiggyBank" onAdd={() => addItem('savings')} onUpdate={(id, u) => updateItem('savings', id, u)} onDelete={id => deleteItem('savings', id)} />
-                            </div>
-                        )}
+        function formatEuro(val) {
+            return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
+        }
 
-                        {tab === 'trends' && (
-                            <div className="space-y-6 animate-fade-in">
-                                <Card title="Periode Filter" iconName="Filter">
-                                    <div className="flex flex-col sm:flex-row gap-4 items-end">
-                                        <div className="flex-1 w-full">
-                                            <label className="block text-xs font-bold text-slate-400 mb-1 ml-1 uppercase">Vanaf</label>
-                                            <input type="month" className="w-full p-2 border rounded-xl outline-none focus:ring-2 focus:ring-teal-400" value={filterStart} onChange={e => setFilterStart(e.target.value)} />
-                                        </div>
-                                        <div className="flex-1 w-full">
-                                            <label className="block text-xs font-bold text-slate-400 mb-1 ml-1 uppercase">Tot</label>
-                                            <input type="month" className="w-full p-2 border rounded-xl outline-none focus:ring-2 focus:ring-teal-400" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} />
-                                        </div>
-                                        {(filterStart || filterEnd) && (
-                                            <button onClick={() => {setFilterStart(''); setFilterEnd('');}} className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors"><Icon name="X" /></button>
-                                        )}
-                                    </div>
-                                </Card>
+        function save() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(budgetData));
+        }
 
-                                <Card title="Inkomsten vs Uitgaven" iconName="TrendingUp">
-                                    <div className="h-80 w-full">
-                                        <ResponsiveContainer>
-                                            <BarChart data={filteredHistory}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                                                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} tickFormatter={v => `€${v}`} />
-                                                <Tooltip />
-                                                <Legend />
-                                                <Bar name="Inkomsten" dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                                                <Bar name="Uitgaven" dataKey="expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </Card>
+        function resetData() {
+            if (confirm('Weet u zeker dat u alle gegevens wilt wissen en de standaardwaarden wilt herstellen?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
 
-                                <Card title="Historisch Overzicht">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-slate-400 uppercase bg-slate-50">
-                                                <tr>
-                                                    <th className="px-4 py-3">Maand</th>
-                                                    <th className="px-4 py-3 text-right">Inkomsten</th>
-                                                    <th className="px-4 py-3 text-right">Uitgaven</th>
-                                                    <th className="px-4 py-3 text-right">Sparen</th>
-                                                    <th className="px-4 py-3 text-right">Netto</th>
-                                                    <th className="px-4 py-3 text-center">Actie</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {filteredHistory.slice().reverse().map(i => (
-                                                    <tr key={i.id} className="hover:bg-slate-50">
-                                                        <td className="px-4 py-3 font-bold text-slate-700">{i.label}</td>
-                                                        <td className="px-4 py-3 text-right font-mono text-emerald-600">{CURRENCY_FORMATTER.format(i.income)}</td>
-                                                        <td className="px-4 py-3 text-right font-mono text-rose-600">{CURRENCY_FORMATTER.format(i.expenses)}</td>
-                                                        <td className="px-4 py-3 text-right font-mono text-sky-600">{CURRENCY_FORMATTER.format(i.savings)}</td>
-                                                        <td className="px-4 py-3 text-right font-mono font-bold">{CURRENCY_FORMATTER.format(i.income - i.expenses)}</td>
-                                                        <td className="px-4 py-3 text-center">
-                                                            <button onClick={() => setData(p => ({...p, history: p.history.filter(h => h.id !== i.id)}))} className="text-slate-300 hover:text-rose-500"><Icon name="Trash2" size={16} /></button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                {filteredHistory.length === 0 && <tr><td colSpan="6" className="py-10 text-center text-slate-400 italic">Geen historie gevonden voor deze filters</td></tr>}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </Card>
-                            </div>
-                        )}
-                    </main>
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(budgetData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "gezinsbudget_export.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
 
-                    <footer className="py-6 text-center text-slate-400 text-xs border-t">
-                        &copy; {new Date().getFullYear()} GezinsBudget Planner Pro &bull; Lokaal opgeslagen
-                    </footer>
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // Run on load
+        init();
     </script>
 </body>
 </html>
